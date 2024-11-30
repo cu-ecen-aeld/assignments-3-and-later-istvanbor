@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Clean previous build artifacts
 echo "Cleaning previous build artifacts..."

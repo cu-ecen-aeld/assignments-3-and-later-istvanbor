@@ -1,4 +1,12 @@
+
 #include "systemcalls.h"
+#include "systemcalls.h"
+#include <stdbool.h>
+#include <stdarg.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <stdlib.h>
 
 /**
  * @param cmd the command to execute with system()
@@ -16,7 +24,10 @@ bool do_system(const char *cmd)
  *   and return a boolean true if the system() call completed with success
  *   or false() if it returned a failure
 */
-
+    int ret = system(cmd);
+    if (ret == -1 || WEXITSTATUS(ret) != 0) {
+        return false;
+    }
     return true;
 }
 
@@ -58,11 +69,26 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
+    pid_t pid = fork();
+    if (pid == -1) {
+	va_end(args);
+	return false;
+    }
 
-    va_end(args);
-
-    return true;
+   if (pid==0) {
+	execv(command[0], command);
+	exit(EXIT_FAILURE);
+   } else {
+	int status;
+	if (waitpid(pid,&status, 0) == -1) {
+		va_end(args);
+		return false;
+	}
+	va_end(args);
+	return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+} 
 }
+
 
 /**
 * @param outputfile - The full path to the file to write with command output.
@@ -93,7 +119,37 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *
 */
 
-    va_end(args);
+    pid_t pid = fork();
+    if (pid == -1) {
+        va_end(args);
+        return false; // Fork failed
+    }
 
-    return true;
+    if (pid == 0) {
+        // Child process
+        int fd = open(outputfile, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+        if (fd == -1) {
+            exit(EXIT_FAILURE); // Failed to open file
+        }
+
+        if (dup2(fd, STDOUT_FILENO) == -1) {
+            close(fd);
+            exit(EXIT_FAILURE); // Failed to redirect stdout
+        }
+
+        close(fd); // Close the file descriptor; it's no longer needed
+        execv(command[0], command);
+        // If execv returns, an error occurred
+        exit(EXIT_FAILURE);
+    } else {
+        // Parent process
+        int status;
+        if (waitpid(pid, &status, 0) == -1) {
+            va_end(args);
+            return false; // waitpid failed
+        }
+        va_end(args);
+        return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+    }
 }
+

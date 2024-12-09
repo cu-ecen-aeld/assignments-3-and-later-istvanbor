@@ -1,31 +1,16 @@
-CC := $(CROSS_COMPILE)gcc
-CFLAGS := -Wall -Wextra -Werror -std=gnu99
+ifeq ($(CROSS_COMPILE), aarch64-none-linux-gnu-)
+	CC := $(CROSS_COMPILE)gcc
+else
+	CC := cc
+endif
 
-# Targets
-TARGETS := writer finder
-SRC_WRITER := writer.c
-SRC_FINDER := finder.c
-OBJ_WRITER := $(SRC_WRITER:.c=.o)
-OBJ_FINDER := $(SRC_FINDER:.c=.o)
+all: writer
 
-# Default target
-.PHONY: all
-all: $(TARGETS)
+writer: writer.o
+	$(CC) -o writer writer.o
 
-# Build the writer application
-writer: $(OBJ_WRITER)
-	$(CC) $(CFLAGS) -o $@ $^
+writer.o: writer.c
+	$(CC) -c writer.c
 
-# Build the finder application
-finder: $(OBJ_FINDER)
-	$(CC) $(CFLAGS) -o $@ $^
-
-# Compile source files
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
-
-# Clean target
-.PHONY: clean
 clean:
-	rm -f $(TARGETS) $(OBJ_WRITER) $(OBJ_FINDER)
-
+	rm -f writer *.o

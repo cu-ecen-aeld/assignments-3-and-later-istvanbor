@@ -41,20 +41,16 @@ void setup_signal_handling() {
 
 void handle_client(int client_fd) {
     char buffer[BUFFER_SIZE];
+    ssize_t received_bytes;
 
     // Receive message from client
-    ssize_t received_bytes = recv(client_fd, buffer, BUFFER_SIZE - 1, 0);
+    received_bytes = recv(client_fd, buffer, BUFFER_SIZE - 1, 0);
     if (received_bytes <= 0) {
         syslog(LOG_ERR, "Error receiving data from client");
         perror("Error receiving data from client");
         close(client_fd);
         return;
     }
-
-    // Don't automatically add a newline
-    // buffer[received_bytes] = '\n'; // Remove this line to avoid adding an extra newline
-
-    syslog(LOG_INFO, "Received message from client.");
 
     // Save message to file
     int file_fd = open(FILENAME, O_WRONLY | O_CREAT | O_APPEND, 0644);

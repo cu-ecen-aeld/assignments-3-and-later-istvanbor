@@ -1,12 +1,16 @@
-CC = gcc
-CFLAGS = -Wall -Werror -g
-LDFLAGS = -lpthread
+ifeq ($(CROSS_COMPILE), aarch64-none-linux-gnu-)
+	CC := $(CROSS_COMPILE)gcc
+else
+	CC := cc
+endif
 
 all: aesdsocket
 
-aesdsocket: aesdsocket.c
-	$(CC) $(CFLAGS) -o aesdsocket aesdsocket.c $(LDFLAGS)
+aesdsocket: aesdsocket.o
+	$(CC) -o aesdsocket aesdsocket.o
+
+aesdsocket.o: aesdsocket.c
+	$(CC) -c aesdsocket.c
 
 clean:
-	rm -f aesdsocket
-
+	rm -f aesdsocket *.o
